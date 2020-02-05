@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta name="viewport" 
+        content="width=device-width, 
+        initial-scale=1.0, 
+        user-scalable=no" />
+
+
+  <title>Slider 1.1</title>
+  <style>
+
+    body {
+      background-color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #container {
+
+      width: 800px;
+      height: 200px;
+
+      background-color: #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 7px;
+
+      /* touch-action: none; */
+      position: absolute;
+
+      flex-direction: column;
+      padding-left:20px;
+      padding-right:20px;
+
+      /* margin-right: 10px; */
+      overflow: visible;
+    }
+
+    .displayValue {
+      width: 200px;
+      height: 30px;
+      display: flex;
+      
+      
+      justify-content: center;
+      top: 40px;
+     
+      border-color: #007eae;
+      border-style: solid;
+      border-width: 1px;
+      position: absolute;
+      flex-direction:column;
+      
+    }
+
+    #displayValue {
+
+      background: transparent;
+      text-align: center;
+      border: none;
+    }
+
+    #bar {
+        width:0;
+        height:25px;
+        background-color: #007eae;
+        
+        align-items: center;
+        align-self: flex-start;
+        /* top:25px; */
+        position: relative;
+        display: flex;
+        z-index:2;
+        
+    }
+
+    #baseBar {
+        width:100%;
+        height:25px;
+        background-color: #999;
+        z-index:1;
+        align-items: center;
+        top:-25px; 
+        position: relative;
+        display: flex;
+       
+      
+    }
+
+    #arrowSlider {
+
+      width: 20;
+      height: 20;
+
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 20px solid #000;
+      
+      touch-action: none;
+      user-select: none;
+      position: relative;
+      z-index:3;
+
+      top:30px;
+
+      align-self: flex-start;
+      display: flex;
+
+      margin-left: -10px;
+    
+      position: relative;
+      /* background-color: yellowgreen; */
+    }
+
+    #arrowSlider:active {
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 20px solid #000;
+    }
+
+    #arrowSlider:hover {
+      cursor: pointer;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 20px solid #fff;
+    }
+
+    #rangeValue1 {
+      align-self: flex-start;
+      top:120px;
+      position: absolute;
+      font-size: 14px;
+    }
+    #rangeValue2 {
+      align-self : flex-end;
+      position: absolute;
+      font-size: 14px;
+      top:120px;
+    }
+
+     .all {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height:600px;
+    } 
+
+  </style>
+
+</head>
+
+<body>
+
+<!-- <div class="all"> -->
+
+    <div id="container">
+      
+      <div class="displayValue"><input id="displayValue" type="text" onfocus="this.value=''" name="fname"></div>
+      <div id="arrowSlider"></div>
+      <div id="bar"></div>
+      <div id="baseBar"></div>
+
+      <div id="rangeValue1"></div>
+      <div id="rangeValue2"></div>
+      
+    </div>
+
+  <!-- </div> -->
+
+  <script>
+
+    var dragArrow = document.querySelector("#arrowSlider");
+    var container = document.querySelector("#container");
+    var slideGraph = document.querySelector("#bar");
+    var referenceGraph = document.querySelector("#baseBar");
+
+    var rangeValue1 = document.querySelector("#rangeValue1");
+    var rangeValue2 = document.querySelector("#rangeValue2");
+
+    var inputValue = document.querySelector("#displayValue");
+
+    inputValue.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+
+            // console.log(displayValue.value);
+            setTranslate(null,displayValue.value);
+            
+        }
+    });
+
+
+
+    var active = false;
+    var currentX;
+    var initialX;
+    var xOffset = 0;
+
+    var totalBarWidth = slideGraph.offsetWidth;
+    var perCent = 0;
+
+    var marginDiference = 4;
+
+    //init
+    var minValue = 0;
+    var maxValue = 100;
+    var totalValue = maxValue - minValue;
+    var modeRange = "linear";
+    var valueDisplay = "€"
+    var actualValue = 0;
+
+    rangeValue1.textContent = minValue;
+    rangeValue2.textContent = maxValue;
+    displayValue.textContent = minValue+valueDisplay;
+
+    container.addEventListener("touchstart", dragStart);
+    container.addEventListener("touchend", dragEnd);
+    container.addEventListener("touchmove", drag);
+
+    container.addEventListener("mousedown", dragStart);
+    container.addEventListener("mouseup", dragEnd);
+    container.addEventListener("mouseleave", dragEnd);
+    container.addEventListener("mousemove", drag);
+
+    function dragStart(e) {
+      if (e.type === "touchstart") {
+        initialX = e.touches[0].clientX - xOffset;
+      } else {
+        initialX = e.clientX - xOffset;
+      }
+      if (e.target === dragArrow) {
+        active = true;
+      }
+    }
+
+    function dragEnd(e) {
+      initialX = currentX;
+      active = false;
+    }
+
+    function drag(e) {
+      if (active) {
+        e.preventDefault();
+        if (e.type === "touchmove") {
+          currentX = e.touches[0].clientX - initialX;
+        } else {
+          currentX = e.clientX - initialX;
+        }
+        xOffset = currentX;
+        setTranslate(currentX);
+      }
+    }
+
+    function setTranslate(xPos,varSize) {
+
+      proportion = ((xPos - referenceGraph.offsetLeft) / referenceGraph.offsetWidth);
+      //calculates percent width bar
+      perCent = (proportion * 100).toFixed(0);
+
+      if(varSize != undefined) {
+        proportion = varSize / 100;
+        perCent = proportion;
+        if(xPos != 0) xPos = (referenceGraph.offsetWidth * proportion)+20;
+        console.log("proportion:"+proportion+" xPos:"+xPos);
+      }
+      
+
+  // --> modifying graphic items
+      if(perCent > 0 && perCent < 100 ) {
+        // sets the position of the arrowSlider
+        arrowSlider.style.transform = "translate3d(" + (xPos-referenceGraph.offsetLeft) + "px, 0px, 0)";
+        // set the width of the graph bar
+        slideGraph.style.width = ( proportion * 100) + '%';	
+      }
+
+  // --> modifying numeric values    
+      actualValue = (minValue + totalValue * proportion).toFixed(0);
+
+      if(actualValue < minValue ) {
+        actualValue = minValue;
+        slideGraph.style.width = "0%";
+      }
+
+      if(actualValue > maxValue ) {
+        actualValue = maxValue;
+        slideGraph.style.width = "100%";	
+      }
+
+      displayValue.value  =  actualValue + valueDisplay;
+ 
+    }
+
+  </script>
+</body>
+
+</html>
